@@ -1,4 +1,5 @@
 const gameStates = require('../../constants/gameStates')
+const { v4: uuidv4 } = require('uuid')
 
 function shuffleArray (a) {
   for (let i = a.length - 1; i > 0; i--) {
@@ -20,12 +21,25 @@ function getMixedPairs (arr1, arr2) {
   return mixedPairs
 }
 
+const getNewTeam = (members, i) => ({
+  name: null,
+  members,
+  leader: members[0],
+  id: uuidv4(),
+  roundsPlayed: 0,
+  points: 0,
+  order: i
+})
+
 module.exports = function makingTeams (room, users) {
+  console.log('makingTeams controller enter')
   const shuffledUsers = shuffleArray([...room.users])
   const middle = Math.floor(shuffledUsers.length / 2)
   const teams = getMixedPairs(
     shuffledUsers.slice(0, middle), shuffledUsers.slice(middle))
+    .map(getNewTeam)
   room.teams = teams
   room.gameState = gameStates.MAKING_TEAMS
+  console.log('makingTeams controller exit')
   return room
 }

@@ -58,8 +58,11 @@ function emitError (socket, error) {
   socket.emit && socket.emit('error', error)
 }
 
+const getUnexistingEntityError = (name, value) =>
+`${name} ${value} doesn't exist`
+
 const getUnexistingRoomError = (roomName) =>
-  `Room ${roomName} doesn't exist`
+  getUnexistingEntityError('room', roomName)
 
 const getMissingParamError = (name) =>
   `Param ${name} is required`
@@ -119,6 +122,27 @@ io.on('connection', (socket) => {
       } else {
         emitError(socket, getInvalidParamError('game state', newState))
         return
+      }
+      io.in(room.name).emit('room state', getRoomState(socket, room.name))
+      logRoomState(room)
+    })
+
+    socket.on('set team name', ({ teamId, teamName, roomName }) => {
+      console.log(`Request to change game team name to ${teamName}`)
+      const room = rooms.get(roomName)
+      if (!room) {
+        emitError(socket, getUnexistingRoomError(roomName))
+        return
+      }
+      const team = room.teams.find(({ id }) => id === teamId)
+      if (!team) {
+        emitError(socket, getUnexistingEntityError('team', teamName))
+        return
+      }
+      team.name = teamName
+      if (room.teams.every(team => team.name)) {
+        const updatedRoom = teamStartController(room, users)
+        rooms.set(room.name, updatedRoom)
       }
       io.in(room.name).emit('room state', getRoomState(socket, room.name))
       logRoomState(room)
