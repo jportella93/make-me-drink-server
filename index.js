@@ -127,7 +127,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', (msg) => {
       console.log(`${user.name} disconnected`)
       users.delete(user.id)
-      io.in(roomName).emit('room state', getRoomState(room.name))
+      io.in(roomName).emit('room state', getRoomState(socket, roomName))
       logUsers()
       logRooms()
     })
