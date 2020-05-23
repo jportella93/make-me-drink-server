@@ -3,6 +3,7 @@ const inspect = require('util').inspect
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
 const port = process.env.PORT || 3000
+const gameStates = require('./constants/gameStates')
 
 const users = new Map()
 const rooms = new Map()
@@ -14,7 +15,8 @@ const getNewUser = (socket, userName) => ({
 
 const getNewRoom = (roomName) => ({
   name: roomName,
-  users: new Set()
+  users: new Set(),
+  gameState: gameStates.WAITING_ROOM
 })
 
 function logUsers () {
@@ -27,10 +29,17 @@ function logRooms () {
   console.log('number of rooms', rooms.size)
 }
 
-const getRoomState = (roomName) => ({
-  users: [...rooms.get(roomName).users].map(id => users.get(id)),
-  timestamp: Date.now()
-})
+const getRoomState = (roomName) => {
+  const room = rooms.get(roomName)
+  if (!room) return {}
+
+  const { gameState, users: roomUsers } = rooms.get(roomName)
+  return {
+    gameState,
+    users: [...roomUsers].map(id => users.get(id)),
+    timestamp: Date.now()
+  }
+}
 
 io.on('connection', (socket) => {
   const { roomName, userName } = socket.handshake.query

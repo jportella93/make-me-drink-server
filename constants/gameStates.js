@@ -1,0 +1,7 @@
+exports.WAITING_ROOM = 'waitingRoom'
+exports.MAKING_TEAMS = 'makingTeams'
+exports.TEAM_START = 'teamStart'
+exports.WAITING_QUESTION = 'waitingQuestion'
+exports.WAITING_ANSWER = 'waitingAnswer'
+exports.ANSWER_RESULT = 'answerResult'
+exports.FINAL_RESULT = 'finalResult'
