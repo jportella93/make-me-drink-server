@@ -6,7 +6,7 @@
   "author": "jportella93 <jportella93@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "develop": "nodemon"
+    "dev": "nodemon"
   },
   "dependencies": {
     "express": "^4.17.1",
