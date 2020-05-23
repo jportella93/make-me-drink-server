@@ -72,6 +72,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', (msg) => {
     console.log(`${user.name} disconnected`)
     users.delete(user.id)
+    io.in(room.name).emit('room state', getRoomState(room.name))
     logUsers()
     logRooms()
   })
