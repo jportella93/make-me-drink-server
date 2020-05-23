@@ -8,9 +8,10 @@ const gameStates = require('./constants/gameStates')
 const users = new Map()
 const rooms = new Map()
 
-const getNewUser = (socket, userName) => ({
+const getNewUser = (socket, userName, type) => ({
   id: socket.id,
-  name: userName
+  name: userName,
+  type
 })
 
 const getNewRoom = (roomName) => ({
@@ -46,13 +47,18 @@ io.on('connection', (socket) => {
   if (!roomName || !userName) return
 
   try {
-    const user = getNewUser(socket, userName)
+    let isNewRoom = false
+    if (!rooms.has(roomName)) {
+      rooms.set(roomName, getNewRoom(roomName))
+      isNewRoom = true
+    }
+    const room = rooms.get(roomName)
+
+    const user = getNewUser(socket, userName, isNewRoom ? 'admin' : 'regular')
     console.log(`${user.name} connected`)
     users.set(user.id, user)
-    logUsers(user)
+    logUsers()
 
-    if (!rooms.has(roomName)) rooms.set(roomName, getNewRoom(roomName))
-    const room = rooms.get(roomName)
     room.users.add(user.id)
     socket.join(room.name)
     console.log(`${user.name} connected to room ${room.name}`)
@@ -61,7 +67,8 @@ io.on('connection', (socket) => {
     socket.on('connection confirmation', () => {
       console.log('connection confirmation')
       socket.emit('connection confirmation', {
-        userName: user.name
+        userName: user.name,
+        roomName: room.name
       })
 
       io.in(room.name).emit('room state', getRoomState(room.name))
