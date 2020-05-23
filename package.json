@@ -1,0 +1,15 @@
+{
+  "name": "0000028-make-me-drink-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:jportella93/make-me-drink-server.git",
+  "author": "jportella93 <jportella93@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "develop": "nodemon"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  }
+}
