@@ -4,6 +4,7 @@ const http = require('http').Server(app)
 const io = require('socket.io')(http)
 const port = process.env.PORT || 3000
 const gameStates = require('./constants/gameStates')
+const makingTeamsController = require('./controllers/gameStates/makingTeams')
 
 const users = new Map()
 const rooms = new Map()
@@ -43,9 +44,10 @@ const getRoomState = (socket, roomName) => {
     return {}
   }
 
-  const { gameState, users: roomUsers } = rooms.get(roomName)
+  const { gameState, users: roomUsers, teams } = rooms.get(roomName)
   return {
     gameState,
+    teams,
     users: [...roomUsers].map(id => users.get(id)),
     timestamp: Date.now()
   }
@@ -61,6 +63,9 @@ const getUnexistingRoomError = (roomName) =>
 
 const getMissingParamError = (name) =>
   `Param ${name} is required`
+
+const getInvalidParamError = (name, value) =>
+  `Param ${name} with value ${value} is invalid`
 
 io.on('connection', (socket) => {
   try {
@@ -95,7 +100,8 @@ io.on('connection', (socket) => {
       console.log('connection confirmation')
       socket.emit('connection confirmation', {
         userName: user.name,
-        roomName: room.name
+        roomName: room.name,
+        userType: user.type
       })
 
       io.in(room.name).emit('room state', getRoomState(socket, room.name))
@@ -107,7 +113,13 @@ io.on('connection', (socket) => {
         emitError(socket, getUnexistingRoomError(roomName))
         return
       }
-      room.gameState = newState
+      if (newState === gameStates.MAKING_TEAMS) {
+        const updatedRoom = makingTeamsController(room, users)
+        rooms.set(room.name, updatedRoom)
+      } else {
+        emitError(socket, getInvalidParamError('game state', newState))
+        return
+      }
       io.in(room.name).emit('room state', getRoomState(socket, room.name))
       logRoomState(room)
     })
