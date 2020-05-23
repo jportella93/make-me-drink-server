@@ -28,7 +28,8 @@ function logRooms () {
 }
 
 const getRoomState = (roomName) => ({
-  users: [...rooms.get(roomName).users].map(id => users.get(id))
+  users: [...rooms.get(roomName).users].map(id => users.get(id)),
+  timestamp: Date.now()
 })
 
 io.on('connection', (socket) => {
