@@ -5,6 +5,9 @@ const io = require('socket.io')(http)
 const port = process.env.PORT || 3000
 const gameStates = require('./constants/gameStates')
 const makingTeamsController = require('./controllers/gameStates/makingTeams')
+const teamStartController = require('./controllers/gameStates/teamStart')
+
+const MAX_ROUNDS = 5
 
 const users = new Map()
 const rooms = new Map()
@@ -18,7 +21,11 @@ const getNewUser = (socket, userName, type) => ({
 const getNewRoom = (roomName) => ({
   name: roomName,
   users: new Set(),
-  gameState: gameStates.WAITING_ROOM
+  gameState: gameStates.WAITING_ROOM,
+  turn: 0,
+  maxRounds: MAX_ROUNDS,
+  roundsPlayed: 0,
+  currentPlayingTeam: null
 })
 
 function logUsers () {
@@ -48,6 +55,7 @@ const getRoomState = (socket, roomName) => {
   return {
     gameState,
     teams,
+    room,
     users: [...roomUsers].map(id => users.get(id)),
     timestamp: Date.now()
   }
@@ -103,14 +111,16 @@ io.on('connection', (socket) => {
       console.log('connection confirmation')
       socket.emit('connection confirmation', {
         userName: user.name,
-        roomName: room.name,
-        userType: user.type
+        userId: user.id,
+        userType: user.type,
+        room
       })
 
       io.in(room.name).emit('room state', getRoomState(socket, room.name))
     })
 
     socket.on('game state change', (newState) => {
+      console.log(`Request to change game state to ${newState}`)
       const room = rooms.get(roomName)
       if (!room) {
         emitError(socket, getUnexistingRoomError(roomName))
