@@ -3,9 +3,20 @@ const http = require('http').Server(app)
 const io = require('socket.io')(http)
 const port = process.env.PORT || 3000
 
+let currentUsers = 0
 io.on('connection', (socket) => {
+  currentUsers++
+  console.log('connected!')
+  console.log('---->: currentUsers', currentUsers)
+
   socket.on('chat message', (msg) => {
     io.emit('chat message', msg)
+  })
+
+  socket.on('disconnect', (msg) => {
+    console.log('disconnected!')
+    currentUsers--
+    console.log('---->: currentUsers', currentUsers)
   })
 })
 
