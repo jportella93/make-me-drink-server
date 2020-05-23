@@ -51,7 +51,6 @@ io.on('connection', (socket) => {
   socket.on('connection confirmation', () => {
     console.log('connection confirmation')
     socket.emit('connection confirmation', {
-      roomName: room.name,
       userName: user.name
     })
 
