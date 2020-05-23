@@ -30,9 +30,12 @@ function logRooms () {
   console.log('number of rooms', rooms.size)
 }
 
-const getRoomState = (roomName) => {
+const getRoomState = (socket, roomName) => {
   const room = rooms.get(roomName)
-  if (!room) return {}
+  if (!room) {
+    emitError(socket, getUnexistingRoomError(roomName))
+    return {}
+  }
 
   const { gameState, users: roomUsers } = rooms.get(roomName)
   return {
@@ -42,11 +45,29 @@ const getRoomState = (roomName) => {
   }
 }
 
-io.on('connection', (socket) => {
-  const { roomName, userName } = socket.handshake.query
-  if (!roomName || !userName) return
+function emitError (socket, error) {
+  console.error(error)
+  socket.emit && socket.emit('error', error)
+}
 
+const getUnexistingRoomError = (roomName) =>
+  `Room ${roomName} doesn't exist`
+
+const getMissingParamError = (name) =>
+  `Param ${name} is required`
+
+io.on('connection', (socket) => {
   try {
+    const { roomName, userName } = socket.handshake.query
+    if (!roomName) {
+      emitError(socket, getMissingParamError('roomName'))
+      return
+    }
+    if (!userName) {
+      emitError(socket, getMissingParamError('userName'))
+      return
+    }
+
     let isNewRoom = false
     if (!rooms.has(roomName)) {
       rooms.set(roomName, getNewRoom(roomName))
@@ -71,16 +92,27 @@ io.on('connection', (socket) => {
         roomName: room.name
       })
 
-      io.in(room.name).emit('room state', getRoomState(room.name))
+      io.in(room.name).emit('room state', getRoomState(socket, room.name))
+    })
+
+    socket.on('game state change', (newState) => {
+      const room = rooms.get(roomName)
+      if (!room) {
+        emitError(socket, getUnexistingRoomError(roomName))
+        return
+      }
+      room.gameState = newState
+      io.in(room.name).emit('room state', getRoomState(socket, room.name))
     })
 
     socket.on('disconnecting', (reason) => {
       Object.keys(socket.rooms).forEach(roomName => {
-        if (!rooms.has(roomName)) return
+        const room = rooms.get(roomName)
+        if (!room) return
 
-        rooms.get(roomName).users.delete(user.id)
-        if (rooms.get(roomName).users.size === 0) {
-          rooms.delete(roomName)
+        room.users.delete(user.id)
+        if (room.users.size === 0) {
+          rooms.delete(room.name)
         }
       })
     })
@@ -88,12 +120,12 @@ io.on('connection', (socket) => {
     socket.on('disconnect', (msg) => {
       console.log(`${user.name} disconnected`)
       users.delete(user.id)
-      io.in(room.name).emit('room state', getRoomState(room.name))
+      io.in(roomName).emit('room state', getRoomState(room.name))
       logUsers()
       logRooms()
     })
   } catch (error) {
-    socket.emit('error', error)
+    emitError(socket, error)
   }
 })
 
