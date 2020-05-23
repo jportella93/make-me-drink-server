@@ -9,8 +9,9 @@ io.on('connection', (socket) => {
   console.log('connected!')
   console.log('---->: currentUsers', currentUsers)
 
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg)
+  socket.on('connection confirmation', () => {
+    console.log('connection confirmation')
+    socket.emit('connection confirmation')
   })
 
   socket.on('disconnect', (msg) => {
