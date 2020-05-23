@@ -117,6 +117,7 @@ io.on('connection', (socket) => {
         const room = rooms.get(roomName)
         if (!room) return
 
+        io.in(roomName).emit('room state', getRoomState(socket, roomName))
         room.users.delete(user.id)
         if (room.users.size === 0) {
           rooms.delete(room.name)
@@ -127,7 +128,6 @@ io.on('connection', (socket) => {
     socket.on('disconnect', (msg) => {
       console.log(`${user.name} disconnected`)
       users.delete(user.id)
-      io.in(roomName).emit('room state', getRoomState(socket, roomName))
       logUsers()
       logRooms()
     })
