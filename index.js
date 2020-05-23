@@ -30,6 +30,12 @@ function logRooms () {
   console.log('number of rooms', rooms.size)
 }
 
+function logRoomState (room) {
+  console.log('room state change')
+  console.log('rooms\n',
+    inspect(getRoomState(null, room.name), false, null, true))
+}
+
 const getRoomState = (socket, roomName) => {
   const room = rooms.get(roomName)
   if (!room) {
@@ -103,6 +109,7 @@ io.on('connection', (socket) => {
       }
       room.gameState = newState
       io.in(room.name).emit('room state', getRoomState(socket, room.name))
+      logRoomState(room)
     })
 
     socket.on('disconnecting', (reason) => {
