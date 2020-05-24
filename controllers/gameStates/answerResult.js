@@ -24,9 +24,13 @@ module.exports = function answerResult (room, users) {
     : ({
       differentAnswers: false,
       pointsUpdate: {
-        [currentPlayingTeamId]: -1,
         [questionCreatorTeamId]: 2
       }
+    })
+
+  Object.entries(currentQuestion.outcome.pointsUpdate)
+    .forEach(([teamId, pointsUpdate]) => {
+      room.teams.find(team => team.id === teamId).points += pointsUpdate
     })
   console.log('answerResult controller exit')
   return room
