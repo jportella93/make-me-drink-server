@@ -6,7 +6,11 @@
   "author": "jportella93 <jportella93@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": "14.x"
   },
   "dependencies": {
     "express": "^4.17.1",
