@@ -151,6 +151,7 @@ io.on('connection', (socket) => {
       }
       team.name = teamName
       if (room.teams.every(team => team.name)) {
+        console.log(`All teams in room ${roomName} are named`)
         const updatedRoom = teamStartController(room, users)
         rooms.set(room.name, updatedRoom)
       }
