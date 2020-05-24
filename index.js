@@ -146,7 +146,7 @@ io.on('connection', (socket) => {
       }
       const team = room.teams.find(({ id }) => id === teamId)
       if (!team) {
-        emitError(socket, getUnexistingEntityError('team', teamName))
+        emitError(socket, getUnexistingEntityError('team', teamId))
         return
       }
       team.name = teamName
