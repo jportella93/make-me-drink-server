@@ -26,7 +26,6 @@ const getNewTeam = (members, i) => ({
   members,
   leader: members[0],
   id: uuidv4(),
-  roundsPlayed: 0,
   points: 0,
   order: i
 })
