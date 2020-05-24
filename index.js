@@ -5,7 +5,10 @@ const io = require('socket.io')(http)
 const port = process.env.PORT || 3000
 const gameStates = require('./constants/gameStates')
 const makingTeamsController = require('./controllers/gameStates/makingTeams')
+const waitingQuestionController = require('./controllers/gameStates/waitingQuestion')
 const teamStartController = require('./controllers/gameStates/teamStart')
+const waitingAnswerController = require('./controllers/gameStates/waitingAnswer')
+const answerResultController = require('./controllers/gameStates/answerResult')
 
 const MAX_ROUNDS = 5
 
@@ -23,8 +26,8 @@ const getNewRoom = (roomName) => ({
   users: new Set(),
   gameState: gameStates.WAITING_ROOM,
   turn: 0,
+  round: 0,
   maxRounds: MAX_ROUNDS,
-  roundsPlayed: 0,
   currentPlayingTeam: null
 })
 
@@ -129,6 +132,12 @@ io.on('connection', (socket) => {
       if (newState === gameStates.MAKING_TEAMS) {
         const updatedRoom = makingTeamsController(room, users)
         rooms.set(room.name, updatedRoom)
+      } else if (newState === gameStates.WAITING_QUESTION) {
+        const updatedRoom = waitingQuestionController(room, users)
+        rooms.set(room.name, updatedRoom)
+      } else if (newState === gameStates.ANSWER_RESULT) {
+        const updatedRoom = answerResultController(room, users)
+        rooms.set(room.name, updatedRoom)
       } else {
         emitError(socket, getInvalidParamError('game state', newState))
         return
@@ -155,6 +164,52 @@ io.on('connection', (socket) => {
         const updatedRoom = teamStartController(room, users)
         rooms.set(room.name, updatedRoom)
       }
+      io.in(room.name).emit('room state', getRoomState(socket, room.name))
+      logRoomState(room)
+    })
+
+    socket.on('question', ({ question, teamId, roomName, userId }) => {
+      console.log(`New question from ${teamId} in ${roomName}: ${question}`)
+      const room = rooms.get(roomName)
+      if (!room) {
+        emitError(socket, getUnexistingRoomError(roomName))
+        return
+      }
+      const team = room.teams.find(({ id }) => id === teamId)
+      if (!team) {
+        emitError(socket, getUnexistingEntityError('team', teamId))
+        return
+      }
+      const user = users.get(userId)
+      if (!user) {
+        emitError(socket, getUnexistingEntityError('user', userId))
+        return
+      }
+      const updatedRoom = waitingAnswerController(room, question, user)
+      rooms.set(room.name, updatedRoom)
+      io.in(room.name).emit('room state', getRoomState(socket, room.name))
+      logRoomState(room)
+    })
+
+    socket.on('answer', ({ questionId, userId, value, roomName }) => {
+      console.log(
+        `New answer to ${questionId} from ${userId} in ${roomName}: ${value}`)
+      const room = rooms.get(roomName)
+      if (!room) {
+        emitError(socket, getUnexistingRoomError(roomName))
+        return
+      }
+      const user = users.get(userId)
+      if (!user) {
+        emitError(socket, getUnexistingEntityError('user', userId))
+        return
+      }
+      const question = room.currentQuestion
+      if (!question || question.id !== questionId) {
+        emitError(socket, getUnexistingEntityError('question', questionId))
+        return
+      }
+      question.answers[userId] = value
       io.in(room.name).emit('room state', getRoomState(socket, room.name))
       logRoomState(room)
     })
