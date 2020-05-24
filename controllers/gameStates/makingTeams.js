@@ -27,7 +27,7 @@ const getNewTeam = (members, i) => ({
   leader: members[0],
   id: uuidv4(),
   points: 0,
-  order: i
+  order: i + 1
 })
 
 module.exports = function makingTeams (room, users) {
