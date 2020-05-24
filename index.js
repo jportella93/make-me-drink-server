@@ -5,6 +5,7 @@ const io = require('socket.io')(http)
 const port = process.env.PORT || 3000
 const gameStates = require('./constants/gameStates')
 const makingTeamsController = require('./controllers/gameStates/makingTeams')
+const gameStartController = require('./controllers/gameStates/gameStart')
 const waitingQuestionController = require('./controllers/gameStates/waitingQuestion')
 const teamStartController = require('./controllers/gameStates/teamStart')
 const waitingAnswerController = require('./controllers/gameStates/waitingAnswer')
@@ -65,8 +66,14 @@ const getRoomState = (socket, roomName) => {
 }
 
 function emitError (socket, error) {
-  console.error(error)
-  socket.emit && socket.emit('error', error)
+  try {
+    console.log('---->: emitError -> emitError')
+    console.error(error)
+    socket.emit('server error', `Server error: ${error}`)
+  } catch (error) {
+    console.log('---->: emitError -> emitError catch')
+    console.error(error)
+  }
 }
 
 const getUnexistingEntityError = (name, value) =>
@@ -129,8 +136,14 @@ io.on('connection', (socket) => {
         emitError(socket, getUnexistingRoomError(roomName))
         return
       }
-      if (newState === gameStates.MAKING_TEAMS) {
+      if (newState === gameStates.GAME_START) {
+        const updatedRoom = gameStartController(room, users)
+        rooms.set(room.name, updatedRoom)
+      } else if (newState === gameStates.MAKING_TEAMS) {
         const updatedRoom = makingTeamsController(room, users)
+        rooms.set(room.name, updatedRoom)
+      } else if (newState === gameStates.TEAM_START) {
+        const updatedRoom = teamStartController(room, users)
         rooms.set(room.name, updatedRoom)
       } else if (newState === gameStates.WAITING_QUESTION) {
         const updatedRoom = waitingQuestionController(room, users)
