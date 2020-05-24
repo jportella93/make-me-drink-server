@@ -1,4 +1,5 @@
 exports.WAITING_ROOM = 'waitingRoom'
+exports.GAME_START = 'gameStart'
 exports.MAKING_TEAMS = 'makingTeams'
 exports.TEAM_START = 'teamStart'
 exports.WAITING_QUESTION = 'waitingQuestion'
