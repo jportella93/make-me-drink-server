@@ -16,6 +16,36 @@ const MAX_ROUNDS = 5
 const users = new Map()
 const rooms = new Map()
 
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
+
+// For demo/portfolio deployments, it's common for the client to be on a different origin.
+// If ALLOWED_ORIGINS is not set, allow all origins (less strict, but frictionless for demos).
+io.origins((origin, callback) => {
+  if (!origin) return callback(null, true) // non-browser clients
+  if (allowedOrigins.length === 0) return callback(null, true)
+  return callback(null, allowedOrigins.includes(origin))
+})
+
+app.get('/', (req, res) => {
+  res
+    .status(200)
+    .type('text/plain')
+    .send('make-me-drink-server is running. Try GET /healthz')
+})
+
+app.get('/healthz', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    uptimeSeconds: Math.round(process.uptime()),
+    rooms: rooms.size,
+    users: users.size,
+    timestamp: Date.now()
+  })
+})
+
 const getNewUser = (socket, userName, type) => ({
   id: socket.id,
   name: userName,
@@ -48,19 +78,27 @@ function logRoomState (room) {
     inspect(getRoomState(null, room.name), false, null, true))
 }
 
+function serializeRoom (room) {
+  if (!room) return null
+  return {
+    ...room,
+    users: [...room.users]
+  }
+}
+
 const getRoomState = (socket, roomName) => {
   const room = rooms.get(roomName)
   if (!room) {
-    emitError(socket, getUnexistingRoomError(roomName))
+    if (socket) emitError(socket, getUnexistingRoomError(roomName))
     return {}
   }
 
-  const { gameState, users: roomUsers, teams } = rooms.get(roomName)
+  const { gameState, users: roomUsers, teams } = room
   return {
     gameState,
     teams,
-    room,
-    users: [...roomUsers].map(id => users.get(id)),
+    room: serializeRoom(room),
+    users: [...roomUsers].map(id => users.get(id)).filter(Boolean),
     timestamp: Date.now()
   }
 }
@@ -69,7 +107,9 @@ function emitError (socket, error) {
   try {
     console.log('---->: emitError -> emitError')
     console.error(error)
-    socket.emit('server error', `Server error: ${error}`)
+    if (!socket) return
+    const message = error instanceof Error ? error.message : String(error)
+    socket.emit('server error', `Server error: ${message}`)
   } catch (error) {
     console.log('---->: emitError -> emitError catch')
     console.error(error)
@@ -123,7 +163,7 @@ io.on('connection', (socket) => {
         userName: user.name,
         userId: user.id,
         userType: user.type,
-        room
+        room: serializeRoom(room)
       })
 
       io.in(room.name).emit('room state', getRoomState(socket, room.name))
@@ -228,15 +268,19 @@ io.on('connection', (socket) => {
     })
 
     socket.on('disconnecting', (reason) => {
-      Object.keys(socket.rooms).forEach(roomName => {
+      const socketRooms = socket.rooms instanceof Set
+        ? [...socket.rooms]
+        : Object.keys(socket.rooms || {})
+
+      socketRooms.forEach(roomName => {
         const room = rooms.get(roomName)
         if (!room) return
-
-        io.in(roomName).emit('room state', getRoomState(socket, roomName))
         room.users.delete(user.id)
         if (room.users.size === 0) {
           rooms.delete(room.name)
+          return
         }
+        io.in(roomName).emit('room state', getRoomState(socket, roomName))
       })
     })
 

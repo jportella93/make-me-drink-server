@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: make-me-drink-server
+    env: node
+    plan: free
+    buildCommand: yarn install --frozen-lockfile
+    startCommand: yarn start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # Comma-separated list of allowed browser origins for Socket.IO.
+      # Leave empty to allow all origins (useful for demos).
+      - key: ALLOWED_ORIGINS
+        value: ""

@@ -6,11 +6,12 @@
   "author": "jportella93 <jportella93@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon",
-    "start": "node index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "lint": "eslint ."
   },
   "engines": {
-    "node": "14.x"
+    "node": ">=18"
   },
   "dependencies": {
     "express": "^4.17.1",
@@ -23,6 +24,7 @@
     "eslint-plugin-import": "^2.20.2",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.1"
+    "eslint-plugin-standard": "^4.0.1",
+    "nodemon": "^3.1.10"
   }
 }
